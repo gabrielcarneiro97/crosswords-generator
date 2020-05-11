@@ -32,8 +32,8 @@ function pegarPalavra(lista) {
 class Cruzamento {
   constructor(palavra, paiLetraId, letraId) {
     this.palavra = palavra;
-    this.paiId = paiLetraId;
-    this.thisId = letraId;
+    this.paiLetraId = paiLetraId;
+    this.thisLetraId = letraId;
   }
 }
 
@@ -46,7 +46,28 @@ class Palavra {
 
 
   encaixar(outraString) {
+    let encaixou = null;
+    this.string.split('').every((char, paiId) => {
+      let naoAchei = true;
+      outraString.split('').every((char2, filhoId) => {
+        if (char === char2) {
+          const used = this.cruzamentos.find((cz) => cz.paiId === paiId);
 
+          if (!used) {
+            const novoCruzamento = new Cruzamento(new Palavra(outraString, this), paiId, filhoId);
+            this.cruzamentos.push(novoCruzamento);
+            naoAchei = false;
+            encaixou = novoCruzamento;
+          }
+        }
+
+        return naoAchei;
+      });
+
+      return naoAchei;
+    });
+
+    return encaixou;
   }
 }
 
@@ -54,8 +75,29 @@ function novoJogo(palavrasQnt) {
   const listaPalavras = pegarLista();
   const primeiraPalavra = new Palavra(pegarPalavra(listaPalavras), null);
 
+  let agora = primeiraPalavra;
   for (let i = 1; i < palavrasQnt; i += 1) {
+    let encaixou = false;
     let string = pegarPalavra(listaPalavras);
+    let primeira = agora;
+    while (!encaixou) {
+      let cruzamento = agora.encaixar(string);
+
+      if (cruzamento) {
+        agora = cruzamento.palavra;
+        encaixou = true;
+      } else if (agora.palavraPai) {
+        agora = agora.palavraPai;
+      } else {
+        string = pegarPalavra(listaPalavras);
+        agora = primeira;
+      }
+    }
   }
+
+  return primeiraPalavra;
 }
 
+const jogo = novoJogo(2);
+
+console.log(jogo);
