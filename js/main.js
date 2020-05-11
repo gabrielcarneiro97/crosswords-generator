@@ -28,9 +28,34 @@ function pegarPalavra(lista) {
   return removeElement(lista, id);
 }
 
-function novoJogo(palavrasQnt) {
-  const listaPalavras = pegarLista();
-  const palavra = pegarPalavra(listaPalavras);
+
+class Cruzamento {
+  constructor(palavra, paiLetraId, letraId) {
+    this.palavra = palavra;
+    this.paiId = paiLetraId;
+    this.thisId = letraId;
+  }
 }
 
-novoJogo(2);
+class Palavra {
+  constructor(string, palavraPai) {
+    this.string = string;
+    this.cruzamentos = [];
+    this.palavraPai = palavraPai;
+  }
+
+
+  encaixar(outraString) {
+
+  }
+}
+
+function novoJogo(palavrasQnt) {
+  const listaPalavras = pegarLista();
+  const primeiraPalavra = new Palavra(pegarPalavra(listaPalavras), null);
+
+  for (let i = 1; i < palavrasQnt; i += 1) {
+    let string = pegarPalavra(listaPalavras);
+  }
+}
+
