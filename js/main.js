@@ -29,6 +29,20 @@ function pegarPalavra(lista) {
 }
 
 
+class CartPos {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+}
+
+class MtxPos {
+  constructor(cartPos, farLeftPos) {
+    this.x = farLeftPos.x - cartPos.x;
+    this.y = farLeftPos.y - cartPos.y;
+  }
+}
+
 class Cruzamento {
   constructor(palavra, paiLetraId, letraId) {
     this.palavra = palavra;
@@ -41,7 +55,11 @@ class Palavra {
   constructor(string, palavraPai) {
     this.string = string;
     this.cruzamentos = [];
-    this.palavraPai = palavraPai;
+    this.palavraPai = palavraPai || null;
+
+    if (!this.palavraPai) {
+      this.cartPos = new CartPos(0, 0);
+    }
   }
 
 
@@ -73,7 +91,7 @@ class Palavra {
 
 function novoJogo(palavrasQnt) {
   const listaPalavras = pegarLista();
-  const primeiraPalavra = new Palavra(pegarPalavra(listaPalavras), null);
+  const primeiraPalavra = new Palavra(pegarPalavra(listaPalavras));
 
   let agora = primeiraPalavra;
   for (let i = 1; i < palavrasQnt; i += 1) {
