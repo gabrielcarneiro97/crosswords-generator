@@ -64,6 +64,11 @@ defmodule Cwgen do
   end
 
   def calc_cart_pos palavra_pai, cruzamento do
+    # case palavra_pai.ot do
+    #   :v ->
+    #   :h -> %CartPos{x: palavra_pai.cart_pos.y + cruzamento.pai, y: palavra}
+    #   _ -> %CartPos{x: nil, y: nil}
+    # end
   end
 
   def nova_palavra(string, palavra_pai, cruzamento) when is_struct(palavra_pai) do
