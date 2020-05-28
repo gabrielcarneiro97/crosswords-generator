@@ -1,5 +1,18 @@
+defmodule CartPos do
+  defstruct x: nil, y: nil
+end
+
+defmodule Cruzamento do
+  defstruct this: nil, pai: nil
+end
+
 defmodule Palavra do
-  defstruct charlist: '', pai: nil, cruzamento: {this: -1, pai: -1}, letras_cruzadas: []
+  defstruct charlist: '',
+    ot: nil,
+    pai: nil,
+    cruzamento: %Cruzamento{},
+    letras_cruzadas_id: [],
+    cart_pos: %CartPos{}
 end
 
 defmodule Cwgen do
@@ -12,8 +25,8 @@ defmodule Cwgen do
     end
   end
 
-  defp pegar_palavras lista, qnt, listaArquivo do
-    [head | tail] = Enum.shuffle(listaArquivo)
+  defp pegar_palavras lista, qnt, lista_arquivo do
+    [head | tail] = Enum.shuffle lista_arquivo
     case qnt do
       0 -> lista
       _ -> lista ++ [head] |> pegar_palavras(qnt - 1, tail)
@@ -21,21 +34,105 @@ defmodule Cwgen do
   end
 
   defp pegar_palavras lista, qnt do
-    listaArquivo = ler_lista_arquivo()
-    pegar_palavras(lista, qnt, listaArquivo)
+    lista_arquivo = ler_lista_arquivo()
+    pegar_palavras(lista, qnt, lista_arquivo)
   end
 
   def pegar_palavras(qnt), do: pegar_palavras [], qnt
+
+  def novo_jogo qnt, palavra_atual, palavras do
+    nova_string = pegar_palavras(1) |> hd
+
+    case qnt do
+      0 -> palavras
+    end
+  end
+
+  def novo_jogo qnt do
+    primeira_palavra = pegar_palavras(1) |> hd |> set_primeira_palavra
+    palavras = [primeira_palavra]
+
+    novo_jogo qnt, primeira_palavra, palavras
+  end
+
+  def set_primeira_palavra string do
+    %Palavra{charlist: to_charlist(string), cart_pos: %CartPos{ x: 0, y: 0 }, ot: :v}
+  end
 
   def nova_palavra string do
     %Palavra{charlist: to_charlist(string)}
   end
 
   def nova_palavra(string, palavra_pai) when is_struct(palavra_pai) do
-    %Palavra{charlist: to_charlist(string), pai: palavra_pai}
+    ot = case palavra_pai.ot do
+      :v -> :h
+      :h -> :v
+      _ -> :error
+    end
+    %Palavra{charlist: to_charlist(string), pai: palavra_pai, ot: ot}
   end
 
-  def cruzar_palavras(palavra_pai, palavra_filha) do
+  defp achar_em_palavra palavra, igualdades do
+    [atual | prox] = igualdades
 
+    disp = find_all_indexes(palavra.charlist, atual)
+      |> Enum.filter(fn el -> !Enum.member?(palavra.letras_cruzadas_id, el) end)
+
+    case Enum.count(disp) do
+      0 -> case Enum.count(prox) do
+          0 -> {:not_found}
+          _ -> achar_em_palavra palavra, prox
+        end
+      _ -> hd(disp) |> (fn id -> {:found, id, atual} end).()
+    end
+  end
+
+  def achar_cruzamento palavra, string do
+    charlist = to_charlist string
+    igualdades = comp_charlists palavra.charlist, charlist
+
+    case Enum.count(igualdades) do
+      0 -> {:not_found}
+      _ -> case achar_em_palavra(palavra, igualdades) do
+          {:found, id, char} -> Enum.find_index(charlist, fn el -> el === char end)
+            |> (fn f_id -> {:found, %Cruzamento{this: f_id, pai: id}} end).()
+          _ -> {:not_found}
+        end
+    end
+  end
+
+  def cruzar palavra, string do
+    charlist = to_charlist string
+  end
+
+  def find_all_indexes list1, char do
+    Enum.with_index(list1) |> Enum.map(
+      fn {el, id} -> case el do
+          ^char -> id
+          _ -> nil
+        end
+      end
+    ) |> Enum.filter(fn el -> el != nil end)
+  end
+
+  def comp_charlists list1, list2, igualdades, step do
+    l = Enum.at list1, step
+    el = Enum.find(list2, nil, fn x -> x == l end)
+
+    last_step = Enum.count(list1)
+
+    case step do
+      ^last_step -> Enum.filter(igualdades, fn el -> el != nil end)
+      _ -> comp_charlists(list1, list2, igualdades ++ [el], step + 1)
+    end
+  end
+
+  def comp_charlists list1, list2 do
+    igualdades = []
+    step = 0
+    uniq_list1 = Enum.uniq list1
+    uniq_list2 = Enum.uniq list2
+
+    comp_charlists uniq_list1, uniq_list2, igualdades, step
   end
 end
