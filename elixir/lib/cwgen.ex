@@ -63,13 +63,22 @@ defmodule Cwgen do
     %Palavra{charlist: to_charlist(string)}
   end
 
-  def nova_palavra(string, palavra_pai) when is_struct(palavra_pai) do
+  def calc_cart_pos palavra_pai, cruzamento do
+  end
+
+  def nova_palavra(string, palavra_pai, cruzamento) when is_struct(palavra_pai) do
     ot = case palavra_pai.ot do
       :v -> :h
       :h -> :v
       _ -> :error
     end
-    %Palavra{charlist: to_charlist(string), pai: palavra_pai, ot: ot}
+    %Palavra{
+      charlist: to_charlist(string),
+      pai: palavra_pai,
+      cruzamento: cruzamento,
+      letras_cruzadas_id: [cruzamento.this],
+      ot: ot
+    }
   end
 
   defp achar_em_palavra palavra, igualdades do
@@ -94,20 +103,35 @@ defmodule Cwgen do
     case Enum.count(igualdades) do
       0 -> {:not_found}
       _ -> case achar_em_palavra(palavra, igualdades) do
-          {:found, id, char} -> Enum.find_index(charlist, fn el -> el === char end)
+          {:found, id, char} -> find_all_indexes(charlist, char)
+            |> Enum.shuffle
+            |> hd
             |> (fn f_id -> {:found, %Cruzamento{this: f_id, pai: id}} end).()
           _ -> {:not_found}
         end
     end
   end
 
-  def cruzar palavra, string do
-    charlist = to_charlist string
+  def add_letra_cruzada_id palavra, id do
+    %Palavra{palavra | letras_cruzadas_id: palavra.letras_cruzadas_id ++ [id]}
   end
 
-  def find_all_indexes list1, char do
-    Enum.with_index(list1) |> Enum.map(
-      fn {el, id} -> case el do
+  def cruzar palavra, string do
+    case achar_cruzamento(palavra, string) do
+      {:found, cruzamento} -> (
+        fn ->
+          novo_pai = add_letra_cruzada_id palavra, cruzamento.pai
+          nova_palavra = nova_palavra string, pai, cruzamento
+        end
+      ).()
+      _ -> {:not_found}
+    end
+  end
+
+  def find_all_indexes list, char do
+    Enum.with_index(list) |> Enum.map(
+      fn {el, id} ->
+        case el do
           ^char -> id
           _ -> nil
         end
