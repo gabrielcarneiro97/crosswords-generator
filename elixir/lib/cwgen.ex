@@ -40,19 +40,33 @@ defmodule Cwgen do
 
   def pegar_palavras(qnt), do: pegar_palavras [], qnt
 
-  def novo_jogo qnt, palavra_atual, palavras do
-    nova_string = pegar_palavras(1) |> hd
+  def pegar_palavra, do: pegar_palavras(1) |> hd
+
+
+  def novo_jogo qnt, p_id, palavras do
+    string = pegar_palavra
+    atual = Enum.at(palavras, p_id)
 
     case qnt do
       0 -> palavras
+      _ -> case cruzar(atual, string) do
+        {:found, pai_novo, p_nova} -> (
+          fn ->
+            palavras = List.replace_at(palavras, p_id, pai_novo)
+            novo_jogo(qnt - 1, p_id + 1, palavras ++ [p_nova])
+          end
+        ).()
+        _ -> novo_jogo(qnt, p_id, palavras)
+        end
     end
   end
 
   def novo_jogo qnt do
-    primeira_palavra = pegar_palavras(1) |> hd |> set_primeira_palavra
+    primeira_palavra = pegar_palavra |> set_primeira_palavra
     palavras = [primeira_palavra]
+    primeira_palavra_id = 0
 
-    novo_jogo qnt, primeira_palavra, palavras
+    novo_jogo qnt, primeira_palavra_id, palavras
   end
 
   def set_primeira_palavra string do
@@ -64,11 +78,11 @@ defmodule Cwgen do
   end
 
   def calc_cart_pos palavra_pai, cruzamento do
-    # case palavra_pai.ot do
-    #   :v ->
-    #   :h -> %CartPos{x: palavra_pai.cart_pos.y + cruzamento.pai, y: palavra}
-    #   _ -> %CartPos{x: nil, y: nil}
-    # end
+    case palavra_pai.ot do
+      :v -> %CartPos{x: palavra_pai.cart_pos.x - cruzamento.this, y: palavra_pai.cart_pos.y - cruzamento.pai}
+      :h -> %CartPos{x: palavra_pai.cart_pos.x + cruzamento.pai, y: palavra_pai.cart_pos.y + cruzamento.this}
+      _ -> %CartPos{x: nil, y: nil}
+    end
   end
 
   def nova_palavra(string, palavra_pai, cruzamento) when is_struct(palavra_pai) do
@@ -82,7 +96,8 @@ defmodule Cwgen do
       pai: palavra_pai,
       cruzamento: cruzamento,
       letras_cruzadas_id: [cruzamento.this],
-      ot: ot
+      ot: ot,
+      cart_pos: calc_cart_pos(palavra_pai, cruzamento)
     }
   end
 
@@ -125,8 +140,9 @@ defmodule Cwgen do
     case achar_cruzamento(palavra, string) do
       {:found, cruzamento} -> (
         fn ->
-          novo_pai = add_letra_cruzada_id palavra, cruzamento.pai
-          nova_palavra = nova_palavra string, pai, cruzamento
+          novo_pai = add_letra_cruzada_id(palavra, cruzamento.pai)
+          nova = nova_palavra(string, novo_pai, cruzamento)
+          {:found, novo_pai, nova}
         end
       ).()
       _ -> {:not_found}
